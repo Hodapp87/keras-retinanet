@@ -27,6 +27,8 @@ from ..utils.anchors import anchor_targets_bbox
 
 
 class Generator(object):
+    """Parent class meant to be subclassed; see CocoGenerator,
+    CSVGenerator, and PascalVocGenerator."""
     def __init__(
         self,
         image_data_generator,
@@ -37,6 +39,16 @@ class Generator(object):
         image_max_side=1024,
         seed=None
     ):
+        """Initialize a Generator.
+
+        Arguments:
+        image_data_generator -- an ImageDataGenerator from Keras
+        batch_size --
+        group_method -- one of "none", "random", or "ratio"
+        shuffle_groups --
+        image_min_side --
+        image_max_side -- 
+        """
         self.image_data_generator = image_data_generator
         self.batch_size           = int(batch_size)
         self.group_method         = group_method

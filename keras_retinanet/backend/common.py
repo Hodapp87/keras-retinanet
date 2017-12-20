@@ -52,16 +52,35 @@ def bbox_transform_inv(boxes, deltas, mean=None, std=None):
 
 
 def shift(shape, stride, anchors):
+    """Shifts base 'relative' anchors by the appropriate amount for a
+    feature map's stride size and shape.  This produces a Keras
+    variable instance containing the coordinates (in the input image's
+    coordinate space) for each anchor corresponding to each sliding
+    window location, with shape of [shape[0]*shape[1]*num_anchors, 4].
+
+    Parameters:
+    shape -- Tuple/list containing (y,x) dimensions of the feature map.
+    stride -- Distance in the input image for each step in the feature map
+    anchors -- Keras variable giving anchors relative to reference window
+               (e.g. 9 total for 3 scales and 3 aspect ratios). Shape should
+               be (num_anchors, 4), with each row being (x0,y0,x1,y1) relative
+               coordinates.
     """
-    Produce shifted anchors based on shape of the map and stride size
-    """
-    shift_x = (keras.backend.arange(0, shape[1], dtype=keras.backend.floatx()) + keras.backend.constant(0.5, dtype=keras.backend.floatx())) * stride
-    shift_y = (keras.backend.arange(0, shape[0], dtype=keras.backend.floatx()) + keras.backend.constant(0.5, dtype=keras.backend.floatx())) * stride
+    # [0,1,2,3..., X] + [0.5,0.5,0.5...]*stride =
+    # [stride/2, 1+stride/2, 2+stride/2, ... (X-1)+stride/2]
+    shift_x = (keras.backend.arange(0, shape[1], dtype=keras.backend.floatx()) +
+               keras.backend.constant(0.5, dtype=keras.backend.floatx())) * stride
+    # Likewise for Y:
+    shift_y = (keras.backend.arange(0, shape[0], dtype=keras.backend.floatx()) +
+               keras.backend.constant(0.5, dtype=keras.backend.floatx())) * stride
 
     shift_x, shift_y = meshgrid(shift_x, shift_y)
     shift_x = keras.backend.reshape(shift_x, [-1])
     shift_y = keras.backend.reshape(shift_y, [-1])
 
+    # Below is columns of (x,y,x,y), where (x,y) is the center point, in
+    # image coordinates, of an anchor.  This is then given for every
+    # point in the feature map - thus shape[0]*shape[1] columns.
     shifts = keras.backend.stack([
         shift_x,
         shift_y,
@@ -69,12 +88,26 @@ def shift(shape, stride, anchors):
         shift_y
     ], axis=0)
 
+    # Switch to shape[0]*shape[1] rows of (x,y,x,y):
     shifts            = keras.backend.transpose(shifts)
     number_of_anchors = keras.backend.shape(anchors)[0]
 
-    k = keras.backend.shape(shifts)[0]  # number of base points = feat_h * feat_w
+    # number of base points = shape[0] * shape[1]:
+    k = keras.backend.shape(shifts)[0]
 
+    # (1) Add an initial dimension to the base anchors.
+    # (2) Add dimension to 'shifts' in the middle.
+
+    # (3) Add the two of them to broadcast add, repeating base anchors
+    # and shifts to produce shape [k, number_of_anchors, 4] - thus,
+    # shifted anchors for each anchor at each feature map location.
     shifted_anchors = keras.backend.reshape(anchors, [1, number_of_anchors, 4]) + keras.backend.cast(keras.backend.reshape(shifts, [k, 1, 4]), keras.backend.floatx())
+    # (why is this cast to floatx when it should be that already?)
+
+    # Merge those first two dimensions.  Thus, rows [0, 1, ...,
+    # number_of_anchors-1] are coordinates for the first feature map
+    # location, [number_of_anchors, ..., (2*number_of_anchors-1)] are
+    # the second, and so on.
     shifted_anchors = keras.backend.reshape(shifted_anchors, [k * number_of_anchors, 4])
 
     return shifted_anchors

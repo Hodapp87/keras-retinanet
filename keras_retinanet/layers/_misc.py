@@ -22,7 +22,24 @@ import numpy as np
 
 
 class Anchors(keras.layers.Layer):
+    """A Keras layer which takes a feature map as input, and produces an
+    output of the coordinates of the anchors corresponding to the
+    sliding window centered at each point of the feature map.
+
+    Each sliding window will have len(ratios)*len(scales) anchors.
+    """
+    
     def __init__(self, size, stride, ratios=None, scales=None, *args, **kwargs):
+        """Create an Anchors layer.
+
+        Parameters:
+        size -- Base sidelength for anchors (at scale 1, anchor area is size^2)
+        stride -- Stride length on input image for each unit in feature map
+        ratios -- List/array of aspect ratios (default [0.5, 1, 2])
+        scales -- List/array of scale factors (default [1, 2^(1/3), 2^(2/3)])
+        *args, **kwargs -- Passed through to keras.layers.Layer __init__
+        """
+        # TODO: Is my note on args/kwargs needed
         self.size   = size
         self.stride = stride
         self.ratios = ratios
@@ -38,6 +55,9 @@ class Anchors(keras.layers.Layer):
             self.scales  = np.array(scales)
 
         self.num_anchors = len(ratios) * len(scales)
+
+        # self.anchors contains the *relative* anchors for each
+        # sliding-window location:
         self.anchors     = keras.backend.variable(utils_anchors.generate_anchors(
             base_size=size,
             ratios=ratios,

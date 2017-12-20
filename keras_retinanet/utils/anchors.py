@@ -121,9 +121,19 @@ def shift(shape, stride, anchors):
 
 
 def generate_anchors(base_size=16, ratios=None, scales=None):
-    """
-    Generate anchor (reference) windows by enumerating aspect ratios X
-    scales w.r.t. a reference window.
+    """Generates relative coordinates of anchors by enumerating aspect
+    ratios and scales from some base size.  This returns a NumPy array
+    of shape (len(ratios)*len(scales), 4).
+
+    Each row contains [x1,y1,x2,y2], giving coordinates of top-left
+    and bottom-right corners of the anchor, relative to some reference
+    window.
+
+    Parameters:
+    base_size -- Base sidelength for anchors (default 16)
+    ratios -- List/array of aspect ratios (default [0.5, 1, 2])
+    scales -- List/array of scale factors (default [1, 2^(1/3), 2^(2/3)])
+
     """
 
     if ratios is None:
@@ -155,7 +165,22 @@ def generate_anchors(base_size=16, ratios=None, scales=None):
 
 
 def bbox_transform(anchors, gt_boxes, mean=None, std=None):
-    """Compute bounding-box regression targets for an image."""
+    """Computes bounding-box regression targets.  Returns a NumPy array
+    with the same shape as 'anchors' or 'gt_boxes', but with each row
+    giving [tx, ty, tw, th].
+
+    This parametrizes bounding boxes according to equations 6-9 of the
+    Fast R-CNN paper (arXiv 1311.2524v5) or, equivalently, equation 2
+    of the Faster R-CNN paper (arXiv 1506.01497).
+
+    Parameters:
+    anchors -- Array giving anchor coordinates as rows of [x0,y0,x1,y1]
+    gt_boxes -- Array giving ground truth object boxes in same format.
+                Should be same shape as 'anchors'.
+    mean -- Optional 4-element array with means for [tx, ty, tw, th]
+    std -- Optional 4-element array with standard deviations (same format)
+
+    """
 
     if mean is None:
         mean = np.array([0, 0, 0, 0])
@@ -174,22 +199,27 @@ def bbox_transform(anchors, gt_boxes, mean=None, std=None):
 
     anchor_widths  = anchors[:, 2] - anchors[:, 0] + 1.0
     anchor_heights = anchors[:, 3] - anchors[:, 1] + 1.0
+    # Anchor center points:
     anchor_ctr_x   = anchors[:, 0] + 0.5 * anchor_widths
     anchor_ctr_y   = anchors[:, 1] + 0.5 * anchor_heights
 
     gt_widths  = gt_boxes[:, 2] - gt_boxes[:, 0] + 1.0
     gt_heights = gt_boxes[:, 3] - gt_boxes[:, 1] + 1.0
+    # Ground-truth object box center points:
     gt_ctr_x   = gt_boxes[:, 0] + 0.5 * gt_widths
     gt_ctr_y   = gt_boxes[:, 1] + 0.5 * gt_heights
 
+    # Same as t_x, t_y, t_w, t_h in paper:
     targets_dx = (gt_ctr_x - anchor_ctr_x) / anchor_widths
     targets_dy = (gt_ctr_y - anchor_ctr_y) / anchor_heights
     targets_dw = np.log(gt_widths / anchor_widths)
     targets_dh = np.log(gt_heights / anchor_heights)
 
+    # Produce rows of [tx, ty, tw, th]
     targets = np.stack((targets_dx, targets_dy, targets_dw, targets_dh))
     targets = targets.T
 
+    # TODO: Why is this used?
     targets = (targets - mean) / std
 
     return targets

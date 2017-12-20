@@ -40,13 +40,31 @@ def default_classification_model(
     classification_feature_size=256,
     name='classification_submodel'
 ):
+    """Returns a Keras model for the classification subnet of
+    RetinaNet. This model is a 5-layer FCN whose inputs is a feature
+    map from any level of the feature pyramid, and whose output is the
+    probability of each class and each anchor.
+   
+    Parameters:
+    num_classes -- Number of object classes
+    num_anchors -- Number of anchors at each sliding-window location
+    pyramid_feature_size -- Dimensions of feature maps (default 256)
+    prior_probability -- Prior probability of each object class (default 0.01)
+    classification_feature_size -- Dimensions of each hidden layer (default 256)
+    name -- Network name (default 'classification_submodel')
+    """
     options = {
         'kernel_size' : 3,
         'strides'     : 1,
         'padding'     : 'same',
     }
 
+    # Input is a feature map:
     inputs  = keras.layers.Input(shape=(None, None, pyramid_feature_size))
+
+    # Pass 'input' as the first layer's input, that layer's output to
+    # the input of the next, and so on, to produce the first 4 layers
+    # (note the initializer; see p5 of the RetinaNet paper):
     outputs = inputs
     for i in range(4):
         outputs = keras.layers.Conv2D(
@@ -58,6 +76,8 @@ def default_classification_model(
             **options
         )(outputs)
 
+    # Produce the final convolutional layer (note different
+    # initialization and dimensions; see RetinaNet figure 3):
     outputs = keras.layers.Conv2D(
         filters=num_classes * num_anchors,
         kernel_initializer=keras.initializers.zeros(),
@@ -73,7 +93,25 @@ def default_classification_model(
     return keras.models.Model(inputs=inputs, outputs=outputs, name=name)
 
 
-def default_regression_model(num_anchors, pyramid_feature_size=256, regression_feature_size=256, name='regression_submodel'):
+def default_regression_model(
+    num_anchors,
+    pyramid_feature_size=256,
+    regression_feature_size=256,
+    name='regression_submodel'
+): 
+    """Returns a Keras model for the box regression subnet of
+    RetinaNet. As in the classification subnet, this model is a
+    5-layer FCN whose inputs is a feature map from any level of the
+    feature pyramid. Its output is (for each anchor) a 4-coordinate
+    parametrization giving a box relative to the anchor box.
+   
+    Parameters:
+    num_anchors -- Number of anchors at each sliding-window location
+    pyramid_feature_size -- Dimensions of feature maps (default 256)
+    classification_feature_size -- Dimensions of each hidden layer (default 256)
+    name -- Network name (default 'regression_submodel')
+    """
+   
     # All new conv layers except the final one in the
     # RetinaNet (classification) subnets are initialized
     # with bias b = 0 and a Gaussian weight fill with stddev = 0.01.
@@ -85,6 +123,7 @@ def default_regression_model(num_anchors, pyramid_feature_size=256, regression_f
         'bias_initializer'   : 'zeros'
     }
 
+    # This works near-identically to default_classification_model:
     inputs  = keras.layers.Input(shape=(None, None, pyramid_feature_size))
     outputs = inputs
     for i in range(4):
@@ -102,6 +141,16 @@ def default_regression_model(num_anchors, pyramid_feature_size=256, regression_f
 
 
 def __create_pyramid_features(C3, C4, C5, feature_size=256):
+    """Returns the feature pyramid as 5 Keras layers, (P3,P4,P5,P6,P7).
+    See p4 of the RetinaNet paper for an explanation of these layers.
+
+    Parameters:
+    C3 -- Final layer of 3rd residual stage of ResNet
+    C3 -- Final layer of 4th residual stage of ResNet
+    C3 -- Final layer of 5th residual stage of ResNet
+    feature_size -- Dimensions of feature space (default 256)
+    """
+    
     # upsample C5 to get P5 from the FPN paper
     P5           = keras.layers.Conv2D(feature_size, kernel_size=1, strides=1, padding='same', name='P5')(C5)
     P5_upsampled = layers.UpsampleLike(name='P5_upsampled')([P5, C4])
@@ -139,6 +188,7 @@ class AnchorParameters:
 
 
 AnchorParameters.default = AnchorParameters(
+    # See RetinaNet paper p4 (areas are 32^2 to 512^2):
     sizes   = [32, 64, 128, 256, 512],
     strides = [8, 16, 32, 64, 128],
     ratios  = np.array([0.5, 1, 2], keras.backend.floatx()),
@@ -147,6 +197,9 @@ AnchorParameters.default = AnchorParameters(
 
 
 def default_submodels(num_classes, anchor_parameters):
+    """Returns a list of (name, model) for the submodels in this network.
+
+    """
     return [
         ('regression', default_regression_model(anchor_parameters.num_anchors())),
         ('classification', default_classification_model(num_classes, anchor_parameters.num_anchors()))
