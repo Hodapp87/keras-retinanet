@@ -21,6 +21,23 @@ import numpy as np
 
 
 def bbox_transform_inv(boxes, deltas, mean=None, std=None):
+    """Computes object box predictions from the bounding-box regression
+    values.  Returns a NumPy array the same same as 'boxes' or
+    'deltas', but with each row giving [x0,y0,x1,y1] of the adjusted
+    bounding box (adjusted by the respective row in 'deltas').
+
+    This performs the inverse of bbox_transform. It parametrizes
+    bounding boxes according to appendix C of the Fast R-CNN paper
+    (arXiv 1311.2524v5), specifically, equations 1-4.
+
+    Parameters:
+    boxes -- Array giving anchor coordinates as rows of [x0,y0,x1,y1]
+    deltas -- Array giving box regression values as [tx, ty, tw, th].
+              Should be same shape as 'boxes'.
+    mean -- Optional 4-element array with respective means for [tx, ty, tw, th]
+    std -- Optional 4-element array with standard deviations (same format)
+
+    """
     if mean is None:
         mean = [0, 0, 0, 0]
     if std is None:
@@ -66,8 +83,8 @@ def shift(shape, stride, anchors):
                be (num_anchors, 4), with each row being (x0,y0,x1,y1) relative
                coordinates.
     """
-    # [0,1,2,3..., X] + [0.5,0.5,0.5...]*stride =
-    # [stride/2, 1+stride/2, 2+stride/2, ... (X-1)+stride/2]
+    # ([0,1,2,3..., X-1] + [0.5,0.5,0.5...])*stride =
+    # [0.5, 1.5, 2.5, ... (X-0.5)]*stride
     shift_x = (keras.backend.arange(0, shape[1], dtype=keras.backend.floatx()) +
                keras.backend.constant(0.5, dtype=keras.backend.floatx())) * stride
     # Likewise for Y:

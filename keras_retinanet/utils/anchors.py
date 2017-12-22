@@ -169,15 +169,16 @@ def bbox_transform(anchors, gt_boxes, mean=None, std=None):
     with the same shape as 'anchors' or 'gt_boxes', but with each row
     giving [tx, ty, tw, th].
 
-    This parametrizes bounding boxes according to equations 6-9 of the
-    Fast R-CNN paper (arXiv 1311.2524v5) or, equivalently, equation 2
-    of the Faster R-CNN paper (arXiv 1506.01497).
+    This parametrizes bounding boxes according to appendix C of the
+    Fast R-CNN paper (arXiv 1311.2524v5), specifically, equations 6-9
+    - or, equivalently, equation 2 of the Faster R-CNN paper (arXiv
+    1506.01497).
 
     Parameters:
     anchors -- Array giving anchor coordinates as rows of [x0,y0,x1,y1]
     gt_boxes -- Array giving ground truth object boxes in same format.
                 Should be same shape as 'anchors'.
-    mean -- Optional 4-element array with means for [tx, ty, tw, th]
+    mean -- Optional 4-element array with respective means for [tx, ty, tw, th]
     std -- Optional 4-element array with standard deviations (same format)
 
     """
