@@ -23,6 +23,9 @@ import PIL
 
 
 def read_image_bgr(path):
+    """Loads the image file from the given path. Returns a NumPy array
+    representing this as a BGR image, channels-last.
+    """
     image = np.asarray(PIL.Image.open(path).convert('RGB'))
     return image[:, :, ::-1].copy()
 

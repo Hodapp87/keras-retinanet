@@ -28,7 +28,14 @@ from ..utils.anchors import anchor_targets_bbox
 
 class Generator(object):
     """Parent class meant to be subclassed; see CocoGenerator,
-    CSVGenerator, and PascalVocGenerator."""
+    CSVGenerator, and PascalVocGenerator.  This is a generator of the
+    sort that 'fit_generator' in Keras can use for its 'generator'
+    argument.
+
+    Subclasses must implement: size, num_classes, name_to_label,
+    label_to_name, image_aspect_ratio, load_image, load_annotations.
+
+    """
     def __init__(
         self,
         image_data_generator,
@@ -66,33 +73,84 @@ class Generator(object):
         self.group_images()
 
     def size(self):
+        """Returns the number of images in this generator.  This method must
+        be overridden.
+        """
         raise NotImplementedError('size method not implemented')
 
     def num_classes(self):
+        """Returns the number of object classes in this generator.  This
+        method must be overridden.
+        """
         raise NotImplementedError('num_classes method not implemented')
 
     def name_to_label(self, name):
+        """Returns the numerical class label that corresponds to a given class
+        name.  This method must be overridden.
+        """
         raise NotImplementedError('name_to_label method not implemented')
 
     def label_to_name(self, label):
+        """Returns the class name that corresponds to a given numerical class
+        label.  This method must be overridden.
+        """
         raise NotImplementedError('label_to_name method not implemented')
 
     def image_aspect_ratio(self, image_index):
+        """Returns the aspect ratio (i.e. ratio of image width to image
+        height) for the image of the given index.  This method must be
+        overridden.
+        """
         raise NotImplementedError('image_aspect_ratio method not implemented')
 
     def load_image(self, image_index):
-        raise NotImplementedError('load_image method not implemented')
+        """Loads the image with the given index, and returns it as a NumPy
+        array, channels-last, in BGR order.  This method must be
+        overridden.
+        """
+        raise NotImplementedError('load_image method not
+        implemented')
 
     def load_annotations(self, image_index):
+        """Loads the annotations for the image with the given index, and
+        returns a NumPy array with one row for each annotations. Each
+        row is of the form [x1,y1,x2,y2,label] where (x1,y1) and
+        (x2,y2) are the bounding box corners and 'label' is the class
+        label.
+
+        This method must be overridden.
+        """
         raise NotImplementedError('load_annotations method not implemented')
 
     def load_annotations_group(self, group):
-        return [self.load_annotations(image_index) for image_index in group]
+        """Loads annotations for a group of images, and returns a list of
+        NumPy arrays, one per image.
+
+        Parameters:
+        group -- List of image indices
+        """
+        return
+        [self.load_annotations(image_index) for image_index in group]
 
     def filter_annotations(self, image_group, annotations_group, group):
+        """Filters the given images & annotations to ensure that each
+        annotation's bounds are given in the correct order
+        (i.e. top-left corner first), and are within the image's
+        bounds.  Returns (image_group, annotations_group) of the same
+        format as the parameters.
+
+        Parameters:
+        image_group -- List of images, each one a NumPy array
+        annotations_group -- List of annotations corresponding to each
+                             element of image_group. Each element is a
+                             NumPy array with rows of [x1,y1,x2,y2,label].
+                             Should be the same length as image_group.
+        group -- List of image indices for each; likewise, same length as
+                 image_group.
+        """
         # test all annotations
         for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
-            assert(isinstance(annotations, np.ndarray)), '\'load_annotations\' should return a list of numpy arrays, received: {}'.format(type(annotations))
+            assert(isinstance(annotations, np.ndarray)), 'Argument \'annotations_group\' should be a list of numpy arrays, received: {}'.format(type(annotations))
 
             # test x2 < x1 | y2 < y1 | x1 < 0 | y1 < 0 | x2 <= 0 | y2 <= 0 | x2 >= image.shape[1] | y2 >= image.shape[0]
             invalid_indices = np.where(
@@ -116,6 +174,9 @@ class Generator(object):
         return image_group, annotations_group
 
     def load_image_group(self, group):
+        """Loads a group of images (given as a list of image indices),
+        returning a list of images as NumPy arrays in BGR order.
+        """
         return [self.load_image(image_index) for image_index in group]
 
     def resize_image(self, image):

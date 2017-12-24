@@ -112,9 +112,9 @@ def default_regression_model(
     name -- Network name (default 'regression_submodel')
     """
    
-    # All new conv layers except the final one in the
-    # RetinaNet (classification) subnets are initialized
-    # with bias b = 0 and a Gaussian weight fill with stddev = 0.01.
+    # "All new conv layers except the final one in the RetinaNet
+    # subnets are initialized with bias b = 0 and a Gaussian weight
+    # fill with stddev = 0.01."
     options = {
         'kernel_size'        : 3,
         'strides'            : 1,
@@ -207,16 +207,31 @@ def default_submodels(num_classes, anchor_parameters):
 
 
 def __build_model_pyramid(name, model, features):
+    """Returns Keras layer containing the concatenated results of a model
+    applied to several sets of features.
+
+    Parameters:
+    name -- Name of returned layer
+    model -- Keras model which should operate on 'features' elements
+    features -- List of Keras layers
+    """
     return keras.layers.Concatenate(axis=1, name=name)([model(f) for f in features])
 
 
 def __build_pyramid(models, features):
+    """Returns a list of Keras layers, with each layer containing one
+    model from 'models' applied to each layer in 'features'.
+    """
     return [__build_model_pyramid(n, m, features) for n, m in models]
 
 
 def __build_anchors(anchor_parameters, features):
+    """Returns a Keras layer containing all anchors, concatenated for each
+    element of 'features' (which should correspond with each element
+    of 'anchor_parameters'
+    """
     anchors = []
-    for i, f in enumerate(features):
+    for i, _ in enumerate(features):
         anchors.append(layers.Anchors(
             size=anchor_parameters.sizes[i],
             stride=anchor_parameters.strides[i],
@@ -236,6 +251,20 @@ def retinanet(
     submodels               = None,
     name                    = 'retinanet'
 ):
+    """Returns a Keras model with the classification and box regression
+    subnet, as well as the anchor bounding boxes.  Model outputs are:
+    [anchors, regression subnet output, classification subnet output].
+
+    Parameters:
+    inputs -- Input layer used for network
+    backbone -- Backbone network whose outputs are used for feature pyramid
+    num_classes -- How many classes to use for classification subnet
+    anchor_parameters -- Optional AnchorParameters instance for anchors
+    create_pyramid_features -- Optional function for building pyramid;
+                               should take arguments for C3, C4, and C5
+                               and returns a tuple with (P3,P4,P5,P6,P7).
+    name -- Name of model (default "retinanet")
+    """
     if submodels is None:
         submodels = default_submodels(num_classes, anchor_parameters)
 
@@ -268,4 +297,5 @@ def retinanet_bbox(inputs, num_classes, nms=True, name='retinanet-bbox', *args, 
         detections = layers.NonMaximumSuppression(name='nms')([boxes, classification, detections])
 
     # construct the model
+    # (Note that anchors are ignored in outputs)
     return keras.models.Model(inputs=inputs, outputs=model.outputs[1:] + [detections], name=name)

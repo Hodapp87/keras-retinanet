@@ -149,6 +149,17 @@ class UpsampleLike(keras.layers.Layer):
 
 
 class RegressBoxes(keras.layers.Layer):
+    """A Keras layer which takes input of anchor bounding boxes and
+    bounding box regression values (or deltas), and returns bounding
+    boxes adjusted by these deltas.
+
+    Specifically, its input is [anchor, regression], where 'anchor'
+    contains rows of [x0, y0, x1, y1] for anchor coordinates, and
+    'regression' is [tx, ty, tw, th] using the same parametrization as
+    bbox_transform and bbox_transform_inv (and both must have the same
+    shape).  Its output is those adjusted bounding boxes as rows of
+    [x0, y0, x1, y1], again giving the coordinates of corners.
+    """
     def __init__(self, mean=None, std=None, *args, **kwargs):
         if mean is None:
             mean = np.array([0, 0, 0, 0])

@@ -26,6 +26,16 @@ def anchor_targets_bbox(
     positive_overlap=0.5,
     **kwargs
 ):
+    """
+
+    Parameters:
+    image_shape --
+    boxes --
+    num_classes --
+    mask_shape --
+    negative_overlap --
+    positive_overlap --
+    """
     anchors = anchors_for_shape(image_shape, **kwargs)
 
     # label: 1 is positive, 0 is negative, -1 is dont care
@@ -70,6 +80,28 @@ def anchors_for_shape(
     strides=None,
     sizes=None
 ):
+    """Computes bounding boxes of the anchors at each pyramid level for a
+    given input image shape and pyramid parameters.  Returns a NumPy
+    array with one row per anchor, and each row equaling [x1,y1,x2,y2]
+    where (x1,y1) is the top-left corner and (x2,y2) the bottom-right
+    corner in the coordinate space of the input image.
+
+    Parameters:
+    image_shape -- (height, width) of input image
+    pyramid_levels -- List of pyramid level used for feature maps;
+                      default [3, 4, 5, 6, 7]
+    ratios -- Which aspect ratios to make anchors for; default [0.5, 1, 2]
+    scales -- Which scale factors to make anchors for; default
+              [1, 2^(1/3), 2^(2/3)]
+    strides -- A list giving, for each pyramid level, the distance in the
+               input image for each motion in the feature map at that level.
+               Should be same length as pyramid_levels.  Default is based on
+               pyramid_levels.
+    sizes -- A list giving, for each pyramid level, the base sidelength
+             (i.e. at scale 1) of the anchor at that level.  Default is based
+             on pyramid_levels.
+
+    """
     if pyramid_levels is None:
         pyramid_levels = [3, 4, 5, 6, 7]
     if strides is None:
