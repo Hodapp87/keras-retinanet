@@ -26,17 +26,36 @@ def anchor_targets_bbox(
     positive_overlap=0.5,
     **kwargs
 ):
-    """
-    TODO: Figure this crap out
+    """Computes label encoding and bounding box regression targets, given
+    some set of anchors for the feature pyramid of an input image of
+    some shape.  That is: it computes overlap by Intersection over
+    Union for each anchor compared to each ground truth object box,
+    and is IoU > positive_overlap, this anchor is assigned to that
+    bounding box and its respective object class; if IoU <
+    negative_overlap, it is assigned to the background.  If IoU is in
+    between negative_overlap and positive_overlap, the anchor is
+    simply ignored.  This is the scheme described in the "Focal Loss
+    for Dense Object Detection" paper (arXiv:1708.02002).
+
+    Returns:
+    (labels, bbox_reg_targets).
+    'labels' is a NumPy array of shape (N, num_classes) for which
+    labels[n,c] is 0 if anchor 'n' is *not* object class 'c', is 1 if
+    it is object class 'c', or is -1 if it doesn't matter (e.g. it's
+    outside of the image or doesn't overlap enough).
+    'bbox_reg_targets' is a NumPy array of shape (N, 4) where each
+    anchor corresponds to a row, and contains the bounding box
+    regression targets in the form [tx,ty,tw,th] - see bbox_transform.
 
     Parameters:
-    image_shape --
-    boxes -- Annotations as [x1,y1,x2,y2,label]
+    image_shape -- Input image dimensions as (height,width)
+    boxes -- Annotations (ground truth object boxes) as [x1,y1,x2,y2,label]
     num_classes -- Number of object classes
-    mask_shape --
+    mask_shape -- (y,x) of lower-right corner of mask (top-left is (0,0))
     negative_overlap -- IoU threshold to mark as background (default 0.4)
     positive_overlap -- IoU threshold for positive example (default 0.5)
     **kwargs -- Pyramid parameters passed on to anchors_for_shape
+
     """
     anchors = anchors_for_shape(image_shape, **kwargs)
 
