@@ -27,14 +27,16 @@ def anchor_targets_bbox(
     **kwargs
 ):
     """
+    TODO: Figure this crap out
 
     Parameters:
     image_shape --
-    boxes --
-    num_classes --
+    boxes -- Annotations as [x1,y1,x2,y2,label]
+    num_classes -- Number of object classes
     mask_shape --
-    negative_overlap --
-    positive_overlap --
+    negative_overlap -- IoU threshold to mark as background (default 0.4)
+    positive_overlap -- IoU threshold for positive example (default 0.5)
+    **kwargs -- Pyramid parameters passed on to anchors_for_shape
     """
     anchors = anchors_for_shape(image_shape, **kwargs)
 

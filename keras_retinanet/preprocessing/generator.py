@@ -186,6 +186,17 @@ class Generator(object):
         return preprocess_image(image)
 
     def preprocess_group(self, image_group, annotations_group):
+        """For every image and set of annotations in the input, preprocesses
+        and applies random transformations.  Returns (image_group,
+        annotations_group) in the same format.
+
+        Parameters:
+        image_group -- List of images, each one a NumPy array
+        annotations_group -- List of annotations corresponding to each
+                             element of image_group. Each element is a
+                             NumPy array with rows of [x1,y1,x2,y2,label].
+                             Should be the same length as image_group.
+        """
         for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
             # preprocess the image (subtract imagenet mean)
             image = self.preprocess_image(image)
@@ -217,6 +228,11 @@ class Generator(object):
         self.groups = [[order[x % len(order)] for x in range(i, i + self.batch_size)] for i in range(0, len(order), self.batch_size)]
 
     def compute_inputs(self, image_group):
+        """Returns a 4D tensor containg every image in a list of images.
+
+        Parameters:
+        image_group -- List of images in the form of NumPy arrays (BGR)
+        """
         # get the max image shape
         max_shape = tuple(max(image.shape[x] for image in image_group) for x in range(3))
 
@@ -242,6 +258,9 @@ class Generator(object):
         return anchor_targets_bbox(image_shape, boxes, num_classes, mask_shape, negative_overlap, positive_overlap, **kwargs)
 
     def compute_targets(self, image_group, annotations_group):
+        """
+        TODO: Figure this crap out
+        """
         # get the max image shape
         max_shape = tuple(max(image.shape[x] for image in image_group) for x in range(3))
 
@@ -266,6 +285,10 @@ class Generator(object):
         return [regression_batch, labels_batch]
 
     def compute_input_output(self, group):
+        """Returns (inputs, targets) where 'inputs' is a 4D tensor
+        containing a batch of images and 'targets' is...
+        (TODO)
+        """
         # load images and annotations
         image_group       = self.load_image_group(group)
         annotations_group = self.load_annotations_group(group)
@@ -285,6 +308,9 @@ class Generator(object):
         return inputs, targets
 
     def __next__(self):
+        """Returns the next input in the form of (inputs, targets).
+        TODO: Explain inputs/targets (like compute_input_output?)
+        """
         return self.next()
 
     def next(self):

@@ -31,6 +31,11 @@ def read_image_bgr(path):
 
 
 def preprocess_image(x):
+    """Preprocess images for a pre-trained ImageNet network.  Input 'x'
+    should be a NumPy array containing either a single BGR image, or a
+    batch of BGR images, with values from 0-255.  Returns a Keras
+    variable which has subtracted the ImageNet mean from these images.
+    """
     # mostly identical to "https://github.com/fchollet/keras/blob/master/keras/applications/imagenet_utils.py"
     # except for converting RGB -> BGR since we assume BGR already
     x = x.astype(keras.backend.floatx())
@@ -57,6 +62,20 @@ def random_transform(
     image_data_generator,
     seed=None
 ):
+    """Transforms both an image and annotations on that image by the same
+    transformation.  Returns (image, boxes) in the same format as the
+    input.
+
+    This relies on the random_transform of an ImageDataGenerator from
+    Keras.
+
+    parameters:
+    image -- Input image as a 3D tensor
+    boxes -- NumPy array containing annotations as [x1,y1,x2,y2,label] rows
+    image_data_generator -- ImageDataGenerator from Keras
+    seed -- Optional random seed for transformation
+
+    """
     if seed is None:
         seed = np.random.randint(10000)
 
@@ -101,8 +120,8 @@ def resize_image(img, min_side=600, max_side=1024):
     # rescale the image so the smallest side is min_side
     scale = min_side / smallest_side
 
-    # check if the largest side is now greater than max_side, wich can happen
-    # when images have a large aspect ratio
+    # check if the largest side is now greater than max_side, which can
+    # happen when images have a large aspect ratio
     largest_side = max(rows, cols)
     if largest_side * scale > max_side:
         scale = max_side / largest_side
