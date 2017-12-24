@@ -261,15 +261,14 @@ class Generator(object):
         """Computes classification & regression targets for the given batch of
         images and annotations.
 
-        Returns [regression_batch, labels_batch].
-        Each one is a list whose length is self.batch_size.
-        'regression_batch' is a list containing bounding-box
-        regression targets as NumPy arrays where each row contains the
-        [tx,ty,tw,th] parameters (see bbox_transform) for one bounding
-        box.
-        'labels_batch' is a list of NumPy arrays with the one-hot
-        encoding for the object class of the corresponding bounding
-        box.
+        Returns [regression_batch, labels_batch].  'regression_batch'
+        is a NumPy array with shape (self.batch_size, N, 4) where N is
+        the number of anchors; this contains rows of [tx,ty,tw,th]
+        parameters (see bbox_transform) for the bounding box assigned
+        to each anchor.  'labels_batch' is a NumPy array with shape
+        (self.batch_size, N, self.num_classes()) which contains an
+        encoding of the class label for each bounding box / anchor
+        (see anchor_targets_bbox).
 
         The lists for image and annotation groups should be equal in
         length to the current batch size (self.batch_size).
