@@ -258,8 +258,28 @@ class Generator(object):
         return anchor_targets_bbox(image_shape, boxes, num_classes, mask_shape, negative_overlap, positive_overlap, **kwargs)
 
     def compute_targets(self, image_group, annotations_group):
-        """
-        TODO: Figure this crap out
+        """Computes classification & regression targets for the given batch of
+        images and annotations.
+
+        Returns [regression_batch, labels_batch].
+        Each one is a list whose length is self.batch_size.
+        'regression_batch' is a list containing bounding-box
+        regression targets as NumPy arrays where each row contains the
+        [tx,ty,tw,th] parameters (see bbox_transform) for one bounding
+        box.
+        'labels_batch' is a list of NumPy arrays with the one-hot
+        encoding for the object class of the corresponding bounding
+        box.
+
+        The lists for image and annotation groups should be equal in
+        length to the current batch size (self.batch_size).
+
+        Parameters:
+        image_group -- List of images, each one a NumPy array
+        annotations_group -- List of annotations corresponding to each
+                             element of image_group. Each element is a
+                             NumPy array with rows of [x1,y1,x2,y2,label].
+
         """
         # get the max image shape
         max_shape = tuple(max(image.shape[x] for image in image_group) for x in range(3))
@@ -285,9 +305,13 @@ class Generator(object):
         return [regression_batch, labels_batch]
 
     def compute_input_output(self, group):
-        """Returns (inputs, targets) where 'inputs' is a 4D tensor
-        containing a batch of images and 'targets' is...
-        (TODO)
+        """Returns (inputs, targets) where 'inputs' is a 4D tensor encoding
+        the batch of images and 'targets' has the classification &
+        bounding box regression targets for this image (in the format
+        that 'compute_targets' returns).
+
+        Parameters:
+        group -- List of image indices for this batch of images
         """
         # load images and annotations
         image_group       = self.load_image_group(group)
@@ -308,8 +332,8 @@ class Generator(object):
         return inputs, targets
 
     def __next__(self):
-        """Returns the next input in the form of (inputs, targets).
-        TODO: Explain inputs/targets (like compute_input_output?)
+        """Returns the next input in the form of (inputs, targets),
+        identically to how 'compute_input_output' returns data.
         """
         return self.next()
 
